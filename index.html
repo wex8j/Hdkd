@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قارئ الباركود</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+  :root {
+    --green: #1a7a3c;
+    --green-light: #25a855;
+    --gold: #f0c040;
+    --dark: #0d1f14;
+    --surface: #132018;
+    --card: #1c3025;
+    --text: #e8f5ec;
+    --muted: #7aad8a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    padding: 18px 24px;
+    background: var(--surface);
+    border-bottom: 2px solid var(--green);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  .logo-icon {
+    font-size: 28px;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+
+  header p {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* Scanner Area */
+  .scanner-box {
+    background: var(--surface);
+    border: 2px solid var(--green);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #interactive {
+    width: 100%;
+    height: 240px;
+    position: relative;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #interactive video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  #interactive canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .scanner-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scan-frame {
+    width: 220px;
+    height: 120px;
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    position: relative;
+  }
+
+  .scan-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    animation: scan 2s linear infinite;
+    top: 0;
+  }
+
+  @keyframes scan {
+    0% { top: 0; opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { top: 100%; opacity: 1; }
+  }
+
+  .scan-corner {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-color: var(--gold);
+    border-style: solid;
+    border-width: 0;
+  }
+  .scan-corner.tl { top: -2px; left: -2px; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+  .scan-corner.tr { top: -2px; right: -2px; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+  .scan-corner.bl { bottom: -2px; left: -2px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+  .scan-corner.br { bottom: -2px; right: -2px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+
+  .scanner-placeholder {
+    width: 100%;
+    height: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--muted);
+    background: #0a1510;
+  }
+
+  .scanner-placeholder .big-icon { font-size: 48px; opacity: 0.5; }
+
+  .scanner-controls {
+    padding: 14px;
+    display: flex;
+    gap: 10px;
+  }
+
+  /* Buttons */
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--green-light);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--green); transform: translateY(-1px); }
+  .btn-primary:disabled { background: #2a4a35; color: var(--muted); cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--green);
+  }
+
+  .btn-secondary:hover { background: var(--green); }
+
+  /* Manual Input */
+  .manual-input {
+    background: var(--surface);
+    border: 2px solid var(--green);
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .manual-input h3 {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .input-row input {
+    flex: 1;
+    background: var(--dark);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    direction: ltr;
+    text-align: center;
+  }
+
+  .input-row input:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  /* Result Card */
+  #result-card {
+    display: none;
+    background: var(--card);
+    border: 2px solid var(--green-light);
+    border-radius: 16px;
+    padding: 20px;
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .product-header {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  #product-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: var(--dark);
+    border: 1px solid var(--green);
+  }
+
+  .product-info h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1.4;
+  }
+
+  .product-info .brand {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .badge {
+    display: inline-block;
+    background: var(--green);
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .info-item {
+    background: var(--dark);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .info-item .label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .info-item .value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .barcode-display {
+    background: var(--dark);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    direction: ltr;
+  }
+
+  /* Price section */
+  .price-note {
+    background: rgba(240,192,64,0.1);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--gold);
+    text-align: center;
+  }
+
+  /* Status */
+  #status {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    padding: 8px;
+    min-height: 30px;
+  }
+
+  #status.error { color: #ff6b6b; }
+  #status.success { color: var(--green-light); }
+
+  /* Loading spinner */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--green);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .detected-banner {
+    background: rgba(37,168,85,0.2);
+    border: 1px solid var(--green-light);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--green-light);
+    text-align: center;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo-icon">📦</span>
+  <div>
+    <h1>قارئ الباركود</h1>
+    <p>ابحث عن معلومات المنتج بالباركود</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Scanner -->
+  <div class="scanner-box">
+    <div id="scanner-area">
+      <div class="scanner-placeholder" id="placeholder">
+        <div class="big-icon">📷</div>
+        <p>اضغط "تشغيل الكاميرا" لمسح الباركود</p>
+      </div>
+      <div id="interactive" style="display:none">
+        <div class="scanner-overlay">
+          <div class="scan-frame">
+            <div class="scan-line"></div>
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scanner-controls">
+      <button class="btn btn-primary" id="start-btn" onclick="startScanner()">📷 تشغيل الكاميرا</button>
+      <button class="btn btn-secondary" id="stop-btn" onclick="stopScanner()" disabled>⏹ إيقاف</button>
+    </div>
+  </div>
+
+  <div class="detected-banner" id="detected-banner"></div>
+
+  <!-- Manual Input -->
+  <div class="manual-input">
+    <h3>✏️ أو أدخل الباركود يدوياً</h3>
+    <div class="input-row">
+      <input type="text" id="manual-barcode" placeholder="0729927750910" maxlength="14" inputmode="numeric">
+      <button class="btn btn-primary" style="flex:0; padding: 12px 16px" onclick="lookupManual()">🔍</button>
+    </div>
+  </div>
+
+  <div id="status">أدخل باركود أو امسح المنتج للبحث عن معلوماته</div>
+
+  <!-- Result -->
+  <div id="result-card">
+    <div class="product-header">
+      <img id="product-img" src="" alt="صورة المنتج" onerror="this.style.display='none'">
+      <div class="product-info">
+        <h2 id="product-name">—</h2>
+        <div class="brand" id="product-brand">—</div>
+        <span class="badge" id="product-category">—</span>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="label">الحجم</div>
+        <div class="value" id="product-size">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">البلد</div>
+        <div class="value" id="product-country">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">الكميات</div>
+        <div class="value" id="product-qty">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">الحالة</div>
+        <div class="value" id="product-status">—</div>
+      </div>
+    </div>
+
+    <div class="barcode-display" id="barcode-num">—</div>
+
+    <div class="price-note">
+      💡 السعر يختلف حسب المتجر — لا تتوفر قواعد بيانات أسعار موحدة مجانية.
+      يُنصح بمقارنة الأسعار في المتاجر المحلية.
+    </div>
+  </div>
+
+</div>
+
+<script>
+let scanning = false;
+let lastCode = '';
+
+function startScanner() {
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('interactive').style.display = 'block';
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('stop-btn').disabled = false;
+  setStatus('🔍 جارٍ تشغيل الكاميرا...');
+
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.getElementById('interactive'),
+      constraints: { facingMode: "environment", width: 640, height: 480 }
+    },
+    decoder: {
+      readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader", "code_128_reader"]
+    }
+  }, function(err) {
+    if (err) {
+      setStatus('❌ تعذر الوصول إلى الكاميرا: ' + err, 'error');
+      resetScanner();
+      return;
+    }
+    Quagga.start();
+    scanning = true;
+    setStatus('📷 وجّه الكاميرا نحو الباركود');
+  });
+
+  Quagga.onDetected(function(result) {
+    const code = result.codeResult.code;
+    if (code && code !== lastCode) {
+      lastCode = code;
+      showDetected(code);
+      lookupBarcode(code);
+    }
+  });
+}
+
+function stopScanner() {
+  if (scanning) { Quagga.stop(); scanning = false; }
+  resetScanner();
+}
+
+function resetScanner() {
+  document.getElementById('placeholder').style.display = 'flex';
+  document.getElementById('interactive').style.display = 'none';
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('stop-btn').disabled = true;
+}
+
+function showDetected(code) {
+  const b = document.getElementById('detected-banner');
+  b.style.display = 'block';
+  b.textContent = '✅ تم مسح الباركود: ' + code;
+}
+
+function lookupManual() {
+  const code = document.getElementById('manual-barcode').value.trim();
+  if (!code) { setStatus('❗ الرجاء إدخال رقم الباركود', 'error'); return; }
+  lookupBarcode(code);
+}
+
+document.getElementById('manual-barcode').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') lookupManual();
+});
+
+async function lookupBarcode(code) {
+  setStatus('<span class="spinner"></span> جارٍ البحث عن المنتج...');
+  document.getElementById('result-card').style.display = 'none';
+
+  try {
+    // Try Open Food Facts first
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const data = await res.json();
+
+    if (data.status === 1 && data.product) {
+      displayProduct(code, data.product);
+      setStatus('✅ تم العثور على المنتج', 'success');
+    } else {
+      // Try UPC Item DB
+      const res2 = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${code}`);
+      const data2 = await res2.json();
+      if (data2.items && data2.items.length > 0) {
+        displayFromUPC(code, data2.items[0]);
+        setStatus('✅ تم العثور على المنتج', 'success');
+      } else {
+        setStatus('⚠️ لم يتم العثور على هذا المنتج في قاعدة البيانات', 'error');
+        showNotFound(code);
+      }
+    }
+  } catch (e) {
+    setStatus('❌ خطأ في الاتصال بقاعدة البيانات', 'error');
+    showNotFound(code);
+  }
+}
+
+function displayProduct(code, p) {
+  document.getElementById('product-img').src = p.image_url || p.image_front_url || '';
+  document.getElementById('product-img').style.display = 'block';
+  document.getElementById('product-name').textContent = p.product_name || p.product_name_ar || p.generic_name || 'غير معروف';
+  document.getElementById('product-brand').textContent = '🏭 ' + (p.brands || 'غير معروف');
+  document.getElementById('product-category').textContent = p.categories ? p.categories.split(',')[0].trim() : 'غير مصنف';
+  document.getElementById('product-size').textContent = p.quantity || '—';
+  document.getElementById('product-country').textContent = p.countries || p.manufacturing_places || '—';
+  document.getElementById('product-qty').textContent = p.serving_size || '—';
+  document.getElementById('product-status').textContent = p.states ? (p.states.includes('complete') ? '✅ مكتمل' : '🔶 جزئي') : '—';
+  document.getElementById('barcode-num').textContent = code;
+  document.getElementById('result-card').style.display = 'block';
+}
+
+function displayFromUPC(code, item) {
+  document.getElementById('product-img').src = (item.images && item.images[0]) || '';
+  document.getElementById('product-img').style.display = 'block';
+  document.getElementById('product-name').textContent = item.title || 'غير معروف';
+  document.getElementById('product-brand').textContent = '🏭 ' + (item.brand || 'غير معروف');
+  document.getElementById('product-category').textContent = item.category || 'غير مصنف';
+  document.getElementById('product-size').textContent = item.size || '—';
+  document.getElementById('product-country').textContent = '—';
+  document.getElementById('product-qty').textContent = item.weight || '—';
+  document.getElementById('product-status').textContent = '✅ موجود';
+  document.getElementById('barcode-num').textContent = code;
+  document.getElementById('result-card').style.display = 'block';
+}
+
+function showNotFound(code) {
+  document.getElementById('product-img').style.display = 'none';
+  document.getElementById('product-name').textContent = 'منتج غير معروف';
+  document.getElementById('product-brand').textContent = '—';
+  document.getElementById('product-category').textContent = '—';
+  document.getElementById('product-size').textContent = '—';
+  document.getElementById('product-country').textContent = '—';
+  document.getElementById('product-qty').textContent = '—';
+  document.getElementById('product-status').textContent = '❓ غير مسجل';
+  document.getElementById('barcode-num').textContent = code;
+  document.getElementById('result-card').style.display = 'block';
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.innerHTML = msg;
+  el.className = type;
+}
+
+// Auto-fill the barcode from the image
+document.getElementById('manual-barcode').value = '0729927750910';
+</script>
+</body>
+</html>
