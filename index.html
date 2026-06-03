@@ -16,8 +16,10 @@
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
         .price-badge { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 15px; }
         .distance-badge { background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
-        .detail-item { font-size: 14px; color: #475569; margin: 8px 0; display: flex; align-items: center; gap: 8px; }
+        .detail-item { font-size: 14px; color: #475569; margin: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .detail-item strong { color: #1e293b; min-width: 70px; }
+        .location-link { background: #f1f5f9; color: #2563eb; font-weight: 600; padding: 4px 10px; border-radius: 8px; text-decoration: none; font-size: 12px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s; }
+        .location-link:hover { background: #e2e8f0; }
         .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .accept-btn:hover { background: #047857; }
         .accept-btn.loading { background: #9ca3af; cursor: not-allowed; }
@@ -41,6 +43,12 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3YmxmdXlpdnZzcmp1bHp0eWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ4NTMsImV4cCI6MjA5NjA3MDg1M30.B_2lxLiEdIWSUGPlLblmi6ob8zBBAIwiOjl1Yb6RhLs';
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
+        // دالة لتنظيف الإحداثيات وتحويلها لرابط خرائط جوجل دوت كوم
+        function makeGoogleMapsUrl(locationStr) {
+            const cleanCoords = locationStr.replace('إحداثيات:', '').trim();
+            return `https://www.google.com/maps/search/?api=1&query=${cleanCoords}`;
+        }
+
         async function fetchOrders() {
             const { data: orders, error } = await supabaseClient
                 .from('deliveries')
@@ -54,6 +62,9 @@
 
             container.innerHTML = '';
             orders.forEach(order => {
+                const pickupUrl = makeGoogleMapsUrl(order.pickup_location);
+                const dropoffUrl = makeGoogleMapsUrl(order.dropoff_location);
+
                 const card = document.createElement('div');
                 card.className = 'order-card';
                 card.id = `card-${order.id}`;
@@ -62,9 +73,17 @@
                         <span class="distance-badge">🛣️ ${order.distance || '0'} كم</span>
                         <span class="price-badge">${(order.price || 0).toLocaleString()} د.ع</span>
                     </div>
-                    <div class="detail-item"><strong>📦 الغرض:</strong> <span>${order.item_details}</span></div>
-                    <div class="detail-item"><strong>📍 من:</strong> <span>${order.pickup_location}</span></div>
-                    <div class="detail-item"><strong>🏁 إلى:</strong> <span>${order.dropoff_location}</span></div>
+                    <div class="detail-item">
+                        <div><strong>📦 الغرض:</strong> <span>${order.item_details}</span></div>
+                    </div>
+                    <div class="detail-item">
+                        <div><strong>📍 من:</strong> <span style="font-size:12px; color:#64748b;">مكان الاستلام</span></div>
+                        <a href="${pickupUrl}" target="_blank" class="location-link">🗺️ افتح الخريطة</a>
+                    </div>
+                    <div class="detail-item">
+                        <div><strong>🏁 إلى:</strong> <span style="font-size:12px; color:#64748b;">مكان التسليم</span></div>
+                        <a href="${dropoffUrl}" target="_blank" class="location-link">🗺️ افتح الخريطة</a>
+                    </div>
                     <button class="accept-btn" id="btn-${order.id}" onclick="acceptOrder(${order.id})">
                         ⚡ قبول واستلام الطلب
                     </button>
@@ -91,7 +110,6 @@
             } else {
                 btn.className = "accept-btn done";
                 btn.innerText = "تم قبول الطلب بنجاح! ✅";
-                // تختفي البطاقة بهدوء بعد ثانية ونصف
                 setTimeout(() => {
                     const card = document.getElementById(`card-${orderId}`);
                     if(card) card.style.display = 'none';
@@ -101,7 +119,7 @@
         }
 
         fetchOrders();
-        setInterval(fetchOrders, 7000); // تحديث دوري ذكي كل 7 ثوانٍ
+        setInterval(fetchOrders, 7000);
     </script>
 </body>
 </html>
