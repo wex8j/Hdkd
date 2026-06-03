@@ -4,46 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة الكابتن - يلا نروح</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght=400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; direction: rtl; }
         .container { max-width: 500px; margin: 0 auto; }
-        
-        /* واجهة تسجيل الدخول */
         .login-screen { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; margin-top: 40px; }
         .login-screen h3 { color: #059669; margin-bottom: 20px; }
         .form-group { text-align: right; margin-bottom: 15px; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #374151; }
         .form-group input { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-family: 'Cairo'; font-size: 14px; }
         .login-btn { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; }
-        
-        /* واجهة الطلبات الرئيسية */
         .main-content { display: none; }
         .header { text-align: center; padding: 15px 0; background: #059669; color: white; border-radius: 16px; margin-bottom: 20px; }
         .header h2 { margin: 0; font-size: 20px; font-weight: 700; }
-        
         .order-card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #e2e8f0; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
         .price-badge { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 15px; }
         .distance-badge { background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
-        
         .detail-group { background: #f8fafc; padding: 10px; border-radius: 12px; margin-bottom: 10px; }
         .detail-item { font-size: 14px; color: #1e293b; margin: 6px 0; }
         .detail-item strong { color: #64748b; }
         .detail-item a { color: #2563eb; text-decoration: none; font-weight: bold; }
-        
         .order-map { height: 160px; border-radius: 12px; margin: 12px 0; border: 1.5px solid #e2e8f0; }
-        
         .maps-action-box { display: flex; gap: 10px; margin-bottom: 12px; }
         .map-trigger-btn { flex: 1; text-align: center; padding: 8px; background: #2563eb; color: white; text-decoration: none; border-radius: 10px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .map-trigger-btn.dropoff { background: #7c3aed; }
-
-        .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; }
         .accept-btn.loading { background: #9ca3af; cursor: not-allowed; }
         .accept-btn.done { background: #10b981; cursor: not-allowed; }
         .no-orders { text-align: center; color: #64748b; font-size: 15px; margin-top: 60px; }
@@ -53,25 +43,12 @@
 <body>
 
     <div class="container">
-        
         <div id="loginScreen" class="login-screen">
             <h3>تسجيل دخول الكابتن 🏍️</h3>
-            <div class="form-group">
-                <label>الاسم الثلاثي</label>
-                <input type="text" id="captainName" placeholder="اكتب اسمك الكامل">
-            </div>
-            <div class="form-group">
-                <label>رقم هاتفك</label>
-                <input type="tel" id="captainPhone" placeholder="07XXXXXXXXX">
-            </div>
-            <div class="form-group">
-                <label>نوع دراجتك</label>
-                <input type="text" id="captainBike" placeholder="مثال: قطاع، ماكس...">
-            </div>
-            <div class="form-group">
-                <label>كود التفعيل الفوري (من المدير)</label>
-                <input type="text" id="activationCode" placeholder="اكتب الكود هنا">
-            </div>
+            <div class="form-group"><label>الاسم الثلاثي</label><input type="text" id="captainName" placeholder="اكتب اسمك الكامل"></div>
+            <div class="form-group"><label>رقم هاتفك</label><input type="tel" id="captainPhone" placeholder="07XXXXXXXXX"></div>
+            <div class="form-group"><label>نوع دراجتك</label><input type="text" id="captainBike" placeholder="مثال: قطاع، ماكس..."></div>
+            <div class="form-group"><label>كود التفعيل الفوري</label><input type="text" id="activationCode" placeholder="اكتب الكود هنا"></div>
             <button class="login-btn" onclick="handleLogin()">تفعيل ودخول النظام</button>
         </div>
 
@@ -84,7 +61,6 @@
                 <p class="no-orders">جاري مراقبة الشوارع واستقبال الطلبات فورا...</p>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -93,9 +69,7 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         window.onload = function() {
-            if (localStorage.getItem('captain_authenticated') === 'true') {
-                showMainInterface();
-            }
+            if (localStorage.getItem('captain_authenticated') === 'true') { showMainInterface(); }
         }
 
         function handleLogin() {
@@ -103,10 +77,8 @@
             const phone = document.getElementById('captainPhone').value.trim();
             const bike = document.getElementById('captainBike').value.trim();
             const code = document.getElementById('activationCode').value.trim();
-
             if (!name || !phone || !bike || !code) { alert("املاً كل الحقول!"); return; }
             if (code !== "3TX") { alert("كود التفعيل غير صحيح!"); return; }
-
             localStorage.setItem('captain_name', name);
             localStorage.setItem('captain_phone', phone);
             localStorage.setItem('captain_bike', bike);
@@ -117,46 +89,25 @@
         function showMainInterface() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            
-            fetchOrders(); // جلب الطلبات الموجودة حالياً أول مرة
-
-            // تفعيل ميزة الـ Realtime للاستماع الحقيقي والفوري لأي طلب جديد ينزل بالسيرفر
-            supabaseClient
-                .channel('schema-db-changes')
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'deliveries' },
-                    (payload) => {
-                        // إعادة جلب القائمة تلقائياً بالملي ثانية وبدون ريفريش عند حدوث أي تغيير
-                        fetchOrders();
-                    }
-                )
-                .subscribe();
+            fetchOrders();
+            supabaseClient.channel('schema-db-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'deliveries' }, () => { fetchOrders(); }).subscribe();
         }
 
         function handleLogout() { localStorage.clear(); location.reload(); }
-
         function parseCoords(locationStr) {
             const clean = locationStr.replace('إحداثيات:', '').trim();
             const parts = clean.split(',');
             return [parseFloat(parts[0]), parseFloat(parts[1])];
         }
-
         function makeNativeMapsLink(coordsArray) {
-            return `https://www.google.com/maps/search/?api=1&query=${coordsArray[0]},${coordsArray[1]}`;
+            return `https://www.google.com/maps?q=${coordsArray[0]},${coordsArray[1]}`;
         }
 
         async function fetchOrders() {
-            const { data: orders, error } = await supabaseClient
-                .from('deliveries')
-                .select('*')
-                .eq('status', 'قيد الانتظار')
-                .order('id', { ascending: false });
-
+            const { data: orders, error } = await supabaseClient.from('deliveries').select('*').eq('status', 'قيد الانتظار').order('id', { ascending: false });
             const container = document.getElementById('ordersList');
             if (error) { container.innerHTML = '<p class="no-orders" style="color:red;">مشكلة بالاتصال</p>'; return; }
             if (!orders || orders.length === 0) { container.innerHTML = '<p class="no-orders">لا توجد طلبات جديدة حالياً.. استرح قليلاً ☕</p>'; return; }
-
             container.innerHTML = '';
             
             orders.forEach(order => {
@@ -164,7 +115,6 @@
                 card.className = 'order-card';
                 card.id = `card-${order.id}`;
                 const mapId = `map-${order.id}`;
-
                 const pickup = parseCoords(order.pickup_location);
                 const dropoff = parseCoords(order.dropoff_location);
 
@@ -173,23 +123,17 @@
                         <span class="distance-badge">🛣️ ${order.distance || '0'} كم</span>
                         <span class="price-badge">${(order.price || 0).toLocaleString()} د.ع</span>
                     </div>
-                    
                     <div class="detail-group">
                         <div class="detail-item"><strong>👤 اسم الزبون:</strong> <span>${order.client_name || 'غير متوفر'}</span></div>
                         <div class="detail-item"><strong>📞 هاتف الزبون:</strong> <a href="tel:${order.client_phone}">${order.client_phone || 'غير متوفر'}</a></div>
-                        <div class="detail-item"><strong>📦 الغرض المطلوب:</strong> <span style="font-weight:bold; color:#4f46e5;">${order.item_details}</span></div>
+                        <div class="detail-item"><strong>📦 الغرض:</strong> <span style="font-weight:bold; color:#4f46e5;">${order.item_details}</span></div>
                     </div>
-                    
                     <div id="${mapId}" class="order-map"></div>
-
                     <div class="maps-action-box">
                         <a href="${makeNativeMapsLink(pickup)}" target="_blank" class="map-trigger-btn">📍 لوكيشن الاستلام</a>
                         <a href="${makeNativeMapsLink(dropoff)}" target="_blank" class="map-trigger-btn dropoff">🏁 لوكيشن التسليم</a>
                     </div>
-
-                    <button class="accept-btn" id="btn-${order.id}" onclick="acceptOrder(${order.id})">
-                        ⚡ قبول واستلام الطلب
-                    </button>
+                    <button class="accept-btn" id="btn-${order.id}" onclick="acceptOrder(${order.id})">⚡ قبول واستلام الطلب</button>
                 `;
                 container.appendChild(card);
 
@@ -210,15 +154,12 @@
             btn.innerText = "جاري الحجز...";
             btn.disabled = true;
 
-            const { error } = await supabaseClient
-                .from('deliveries')
-                .update({ 
-                    status: 'تم القبول من المندوب',
-                    captain_name: localStorage.getItem('captain_name'),
-                    captain_phone: localStorage.getItem('captain_phone'),
-                    captain_bike: localStorage.getItem('captain_bike')
-                })
-                .eq('id', orderId);
+            const { error } = await supabaseClient.from('deliveries').update({ 
+                status: 'تم القبول من المندوب',
+                captain_name: localStorage.getItem('captain_name'),
+                captain_phone: localStorage.getItem('captain_phone'),
+                captain_bike: localStorage.getItem('captain_bike')
+            }).eq('id', orderId);
 
             if (error) {
                 btn.className = "accept-btn";
@@ -227,11 +168,6 @@
             } else {
                 btn.className = "accept-btn done";
                 btn.innerText = "تم قبول الطلب بنجاح! ✅";
-                setTimeout(() => {
-                    const card = document.getElementById(`card-${orderId}`);
-                    if(card) card.style.display = 'none';
-                    fetchOrders();
-                }, 1000);
             }
         }
     </script>
