@@ -20,7 +20,6 @@
         .form-group { text-align: right; margin-bottom: 15px; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #374151; }
         .form-group input { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-family: 'Cairo'; font-size: 14px; }
-        .form-group input:focus { outline: none; border-color: #059669; }
         .login-btn { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; }
         
         /* واجهة الطلبات الرئيسية */
@@ -32,14 +31,17 @@
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
         .price-badge { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 15px; }
         .distance-badge { background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
-        .detail-item { font-size: 14px; color: #1e293b; margin: 8px 0; }
+        
+        .detail-group { background: #f8fafc; padding: 10px; border-radius: 12px; margin-bottom: 10px; }
+        .detail-item { font-size: 14px; color: #1e293b; margin: 6px 0; }
+        .detail-item strong { color: #64748b; }
+        .detail-item a { color: #2563eb; text-decoration: none; font-weight: bold; }
         
         .order-map { height: 160px; border-radius: 12px; margin: 12px 0; border: 1.5px solid #e2e8f0; }
         
-        /* أزرار الخرائط السريعة للموبايل */
         .maps-action-box { display: flex; gap: 10px; margin-bottom: 12px; }
-        .map-trigger-btn { flex: 1; text-align: center; padding: 8px; background: #2563eb; color: white; text-decoration: none; border-radius: 10px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2); }
-        .map-trigger-btn.dropoff { background: #7c3aed; box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2); }
+        .map-trigger-btn { flex: 1; text-align: center; padding: 8px; background: #2563eb; color: white; text-decoration: none; border-radius: 10px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .map-trigger-btn.dropoff { background: #7c3aed; }
 
         .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .accept-btn.loading { background: #9ca3af; cursor: not-allowed; }
@@ -64,11 +66,11 @@
             </div>
             <div class="form-group">
                 <label>نوع دراجتك</label>
-                <input type="text" id="captainBike" placeholder="مثال: قطاع، بطحة، ماكس...">
+                <input type="text" id="captainBike" placeholder="مثال: قطاع، ماكس...">
             </div>
             <div class="form-group">
                 <label>كود التفعيل الفوري (من المدير)</label>
-                <input type="text" id="activationCode" placeholder="اكتب الكود هنا للتشغيل">
+                <input type="text" id="activationCode" placeholder="اكتب الكود هنا">
             </div>
             <button class="login-btn" onclick="handleLogin()">تفعيل ودخول النظام</button>
         </div>
@@ -79,7 +81,7 @@
                 <button id="logoutBtn" onclick="handleLogout()">تسجيل الخروج</button>
             </div>
             <div id="ordersList">
-                <p class="no-orders">جاري مراقبة الشوارع والطلبات...</p>
+                <p class="no-orders">جاري مراقبة الشوارع واستقبال الطلبات فورا...</p>
             </div>
         </div>
 
@@ -90,10 +92,8 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3YmxmdXlpdnZzcmp1bHp0eWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ4NTMsImV4cCI6MjA5NjA3MDg1M30.B_2lxLiEdIWSUGPlLblmi6ob8zBBAIwiOjl1Yb6RhLs';
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // التحقق التلقائي إذا كان المندوب مسجل مسبقاً ومفعل بالكود الصحيح
         window.onload = function() {
-            const isAuth = localStorage.getItem('captain_authenticated');
-            if (isAuth === 'true') {
+            if (localStorage.getItem('captain_authenticated') === 'true') {
                 showMainInterface();
             }
         }
@@ -104,37 +104,37 @@
             const bike = document.getElementById('captainBike').value.trim();
             const code = document.getElementById('activationCode').value.trim();
 
-            if (!name || !phone || !bike || !code) {
-                alert("الرجاء ملء جميع الحقول المطلوبة!");
-                return;
-            }
+            if (!name || !phone || !bike || !code) { alert("املاً كل الحقول!"); return; }
+            if (code !== "3TX") { alert("كود التفعيل غير صحيح!"); return; }
 
-            // شرط كود التفعيل الخاص بك (3TX)
-            if (code !== "3TX") {
-                alert("كود التفعيل غير صحيح! يرجى التواصل مع المدير للحصول عليه.");
-                return;
-            }
-
-            // حفظ بيانات المندوب في ذاكرة الهاتف الثابتة
             localStorage.setItem('captain_name', name);
             localStorage.setItem('captain_phone', phone);
             localStorage.setItem('captain_bike', bike);
             localStorage.setItem('captain_authenticated', 'true');
-
             showMainInterface();
         }
 
         function showMainInterface() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            fetchOrders();
-            setInterval(fetchOrders, 15000); // تحديث دوري
+            
+            fetchOrders(); // جلب الطلبات الموجودة حالياً أول مرة
+
+            // تفعيل ميزة الـ Realtime للاستماع الحقيقي والفوري لأي طلب جديد ينزل بالسيرفر
+            supabaseClient
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'deliveries' },
+                    (payload) => {
+                        // إعادة جلب القائمة تلقائياً بالملي ثانية وبدون ريفريش عند حدوث أي تغيير
+                        fetchOrders();
+                    }
+                )
+                .subscribe();
         }
 
-        function handleLogout() {
-            localStorage.clear();
-            location.reload();
-        }
+        function handleLogout() { localStorage.clear(); location.reload(); }
 
         function parseCoords(locationStr) {
             const clean = locationStr.replace('إحداثيات:', '').trim();
@@ -142,7 +142,6 @@
             return [parseFloat(parts[0]), parseFloat(parts[1])];
         }
 
-        // دالة مخصصة لإنشاء روابط مباشرة لتطبيق خرائط جوجل الأصلي
         function makeNativeMapsLink(coordsArray) {
             return `https://www.google.com/maps/search/?api=1&query=${coordsArray[0]},${coordsArray[1]}`;
         }
@@ -155,7 +154,7 @@
                 .order('id', { ascending: false });
 
             const container = document.getElementById('ordersList');
-            if (error) { container.innerHTML = '<p class="no-orders" style="color:red;">مشكلة بالاتصال بالسيرفر</p>'; return; }
+            if (error) { container.innerHTML = '<p class="no-orders" style="color:red;">مشكلة بالاتصال</p>'; return; }
             if (!orders || orders.length === 0) { container.innerHTML = '<p class="no-orders">لا توجد طلبات جديدة حالياً.. استرح قليلاً ☕</p>'; return; }
 
             container.innerHTML = '';
@@ -169,22 +168,23 @@
                 const pickup = parseCoords(order.pickup_location);
                 const dropoff = parseCoords(order.dropoff_location);
 
-                // إنشاء الروابط السريعة لتطبيق خرائط جوجل الأصلي بالموبايل
-                const nativePickupUrl = makeNativeMapsLink(pickup);
-                const nativeDropoffUrl = makeNativeMapsLink(dropoff);
-
                 card.innerHTML = `
                     <div class="card-header">
                         <span class="distance-badge">🛣️ ${order.distance || '0'} كم</span>
                         <span class="price-badge">${(order.price || 0).toLocaleString()} د.ع</span>
                     </div>
-                    <div class="detail-item"><strong>📦 الغرض:</strong> <span>${order.item_details}</span></div>
+                    
+                    <div class="detail-group">
+                        <div class="detail-item"><strong>👤 اسم الزبون:</strong> <span>${order.client_name || 'غير متوفر'}</span></div>
+                        <div class="detail-item"><strong>📞 هاتف الزبون:</strong> <a href="tel:${order.client_phone}">${order.client_phone || 'غير متوفر'}</a></div>
+                        <div class="detail-item"><strong>📦 الغرض المطلوب:</strong> <span style="font-weight:bold; color:#4f46e5;">${order.item_details}</span></div>
+                    </div>
                     
                     <div id="${mapId}" class="order-map"></div>
 
                     <div class="maps-action-box">
-                        <a href="${nativePickupUrl}" target="_blank" class="map-trigger-btn">📍 موقع الاستلام (جوجل مابس)</a>
-                        <a href="${nativeDropoffUrl}" target="_blank" class="map-trigger-btn dropoff">🏁 موقع التسليم (جوجل مابس)</a>
+                        <a href="${makeNativeMapsLink(pickup)}" target="_blank" class="map-trigger-btn">📍 لوكيشن الاستلام</a>
+                        <a href="${makeNativeMapsLink(dropoff)}" target="_blank" class="map-trigger-btn dropoff">🏁 لوكيشن التسليم</a>
                     </div>
 
                     <button class="accept-btn" id="btn-${order.id}" onclick="acceptOrder(${order.id})">
@@ -193,7 +193,6 @@
                 `;
                 container.appendChild(card);
 
-                // رسم خريطة المعاينة التلقائية
                 try {
                     const cardMap = L.map(mapId, {zoomControl: false}).setView([ (pickup[0]+dropoff[0])/2, (pickup[1]+dropoff[1])/2 ], 13);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(cardMap);
@@ -208,36 +207,31 @@
         async function acceptOrder(orderId) {
             const btn = document.getElementById(`btn-${orderId}`);
             btn.className = "accept-btn loading";
-            btn.innerText = "جاري الحجز وتثبيت اسمك...";
+            btn.innerText = "جاري الحجز...";
             btn.disabled = true;
-
-            // جلب معلومات المندوب المسجل محلياً لإرسالها للسيرفر
-            const cName = localStorage.getItem('captain_name');
-            const cPhone = localStorage.getItem('captain_phone');
-            const cBike = localStorage.getItem('captain_bike');
 
             const { error } = await supabaseClient
                 .from('deliveries')
                 .update({ 
                     status: 'تم القبول من المندوب',
-                    captain_name: cName,
-                    captain_phone: cPhone,
-                    captain_bike: cBike
+                    captain_name: localStorage.getItem('captain_name'),
+                    captain_phone: localStorage.getItem('captain_phone'),
+                    captain_bike: localStorage.getItem('captain_bike')
                 })
                 .eq('id', orderId);
 
             if (error) {
                 btn.className = "accept-btn";
-                btn.innerText = "⚡ فشل الحجز، حاول مجدداً";
+                btn.innerText = "⚡ فشل، حاول مجدداً";
                 btn.disabled = false;
             } else {
                 btn.className = "accept-btn done";
-                btn.innerText = "تم حجز الطلب باسمك بنجاح! ✅";
+                btn.innerText = "تم قبول الطلب بنجاح! ✅";
                 setTimeout(() => {
                     const card = document.getElementById(`card-${orderId}`);
                     if(card) card.style.display = 'none';
                     fetchOrders();
-                }, 1500);
+                }, 1000);
             }
         }
     </script>
