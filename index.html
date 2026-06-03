@@ -13,35 +13,76 @@
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; direction: rtl; }
         .container { max-width: 500px; margin: 0 auto; }
-        .header { text-align: center; padding: 15px 0; background: #059669; color: white; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); }
+        
+        /* واجهة تسجيل الدخول */
+        .login-screen { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; margin-top: 40px; }
+        .login-screen h3 { color: #059669; margin-bottom: 20px; }
+        .form-group { text-align: right; margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #374151; }
+        .form-group input { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-family: 'Cairo'; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: #059669; }
+        .login-btn { width: 100%; padding: 14px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; }
+        
+        /* واجهة الطلبات الرئيسية */
+        .main-content { display: none; }
+        .header { text-align: center; padding: 15px 0; background: #059669; color: white; border-radius: 16px; margin-bottom: 20px; }
         .header h2 { margin: 0; font-size: 20px; font-weight: 700; }
-        .order-card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #e2e8f0; position: relative; }
+        
+        .order-card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #e2e8f0; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
         .price-badge { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 15px; }
         .distance-badge { background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
         .detail-item { font-size: 14px; color: #1e293b; margin: 8px 0; }
-        .detail-item strong { color: #475569; }
         
-        /* تصميم الخريطة المصغرة داخل كارد المندوب */
-        .order-map { height: 160px; border-radius: 12px; margin: 12px 0; border: 1.5px solid #e2e8f0; z-index: 1; }
+        .order-map { height: 160px; border-radius: 12px; margin: 12px 0; border: 1.5px solid #e2e8f0; }
         
-        .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; margin-top: 5px; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .accept-btn:hover { background: #047857; }
+        /* أزرار الخرائط السريعة للموبايل */
+        .maps-action-box { display: flex; gap: 10px; margin-bottom: 12px; }
+        .map-trigger-btn { flex: 1; text-align: center; padding: 8px; background: #2563eb; color: white; text-decoration: none; border-radius: 10px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2); }
+        .map-trigger-btn.dropoff { background: #7c3aed; box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2); }
+
+        .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .accept-btn.loading { background: #9ca3af; cursor: not-allowed; }
         .accept-btn.done { background: #10b981; cursor: not-allowed; }
         .no-orders { text-align: center; color: #64748b; font-size: 15px; margin-top: 60px; }
-        .nav-hint { text-align: center; font-size: 11px; color: #64748b; margin-top: -5px; margin-bottom: 5px; }
+        #logoutBtn { background: none; border: none; color: white; font-family: 'Cairo'; cursor: pointer; font-size: 12px; text-decoration: underline; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="header">
-            <h2>الطلبات النشطة بالرمادي 🚗</h2>
+        
+        <div id="loginScreen" class="login-screen">
+            <h3>تسجيل دخول الكابتن 🏍️</h3>
+            <div class="form-group">
+                <label>الاسم الثلاثي</label>
+                <input type="text" id="captainName" placeholder="اكتب اسمك الكامل">
+            </div>
+            <div class="form-group">
+                <label>رقم هاتفك</label>
+                <input type="tel" id="captainPhone" placeholder="07XXXXXXXXX">
+            </div>
+            <div class="form-group">
+                <label>نوع دراجتك</label>
+                <input type="text" id="captainBike" placeholder="مثال: قطاع، بطحة، ماكس...">
+            </div>
+            <div class="form-group">
+                <label>كود التفعيل الفوري (من المدير)</label>
+                <input type="text" id="activationCode" placeholder="اكتب الكود هنا للتشغيل">
+            </div>
+            <button class="login-btn" onclick="handleLogin()">تفعيل ودخول النظام</button>
         </div>
-        <div id="ordersList">
-            <p class="no-orders">جاري مراقبة الشوارع والطلبات...</p>
+
+        <div id="mainContent" class="main-content">
+            <div class="header">
+                <h2>الطلبات النشطة بالرمادي 🚗</h2>
+                <button id="logoutBtn" onclick="handleLogout()">تسجيل الخروج</button>
+            </div>
+            <div id="ordersList">
+                <p class="no-orders">جاري مراقبة الشوارع والطلبات...</p>
+            </div>
         </div>
+
     </div>
 
     <script>
@@ -49,11 +90,61 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3YmxmdXlpdnZzcmp1bHp0eWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ4NTMsImV4cCI6MjA5NjA3MDg1M30.B_2lxLiEdIWSUGPlLblmi6ob8zBBAIwiOjl1Yb6RhLs';
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // دالة تحويل إحداثيات النص إلى مصفوفة أرقام [lat, lng]
+        // التحقق التلقائي إذا كان المندوب مسجل مسبقاً ومفعل بالكود الصحيح
+        window.onload = function() {
+            const isAuth = localStorage.getItem('captain_authenticated');
+            if (isAuth === 'true') {
+                showMainInterface();
+            }
+        }
+
+        function handleLogin() {
+            const name = document.getElementById('captainName').value.trim();
+            const phone = document.getElementById('captainPhone').value.trim();
+            const bike = document.getElementById('captainBike').value.trim();
+            const code = document.getElementById('activationCode').value.trim();
+
+            if (!name || !phone || !bike || !code) {
+                alert("الرجاء ملء جميع الحقول المطلوبة!");
+                return;
+            }
+
+            // شرط كود التفعيل الخاص بك (3TX)
+            if (code !== "3TX") {
+                alert("كود التفعيل غير صحيح! يرجى التواصل مع المدير للحصول عليه.");
+                return;
+            }
+
+            // حفظ بيانات المندوب في ذاكرة الهاتف الثابتة
+            localStorage.setItem('captain_name', name);
+            localStorage.setItem('captain_phone', phone);
+            localStorage.setItem('captain_bike', bike);
+            localStorage.setItem('captain_authenticated', 'true');
+
+            showMainInterface();
+        }
+
+        function showMainInterface() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            fetchOrders();
+            setInterval(fetchOrders, 15000); // تحديث دوري
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            location.reload();
+        }
+
         function parseCoords(locationStr) {
             const clean = locationStr.replace('إحداثيات:', '').trim();
             const parts = clean.split(',');
             return [parseFloat(parts[0]), parseFloat(parts[1])];
+        }
+
+        // دالة مخصصة لإنشاء روابط مباشرة لتطبيق خرائط جوجل الأصلي
+        function makeNativeMapsLink(coordsArray) {
+            return `https://www.google.com/maps/search/?api=1&query=${coordsArray[0]},${coordsArray[1]}`;
         }
 
         async function fetchOrders() {
@@ -73,9 +164,14 @@
                 const card = document.createElement('div');
                 card.className = 'order-card';
                 card.id = `card-${order.id}`;
-                
-                // تجهيز معرف فريد لكل خريطة داخل الكروت
                 const mapId = `map-${order.id}`;
+
+                const pickup = parseCoords(order.pickup_location);
+                const dropoff = parseCoords(order.dropoff_location);
+
+                // إنشاء الروابط السريعة لتطبيق خرائط جوجل الأصلي بالموبايل
+                const nativePickupUrl = makeNativeMapsLink(pickup);
+                const nativeDropoffUrl = makeNativeMapsLink(dropoff);
 
                 card.innerHTML = `
                     <div class="card-header">
@@ -85,7 +181,11 @@
                     <div class="detail-item"><strong>📦 الغرض:</strong> <span>${order.item_details}</span></div>
                     
                     <div id="${mapId}" class="order-map"></div>
-                    <div class="nav-hint">💡 تكدر تحرك الخريطة وتكبر وتصغر لتشوف المسار كامل</div>
+
+                    <div class="maps-action-box">
+                        <a href="${nativePickupUrl}" target="_blank" class="map-trigger-btn">📍 موقع الاستلام (جوجل مابس)</a>
+                        <a href="${nativeDropoffUrl}" target="_blank" class="map-trigger-btn dropoff">🏁 موقع التسليم (جوجل مابس)</a>
+                    </div>
 
                     <button class="accept-btn" id="btn-${order.id}" onclick="acceptOrder(${order.id})">
                         ⚡ قبول واستلام الطلب
@@ -93,39 +193,37 @@
                 `;
                 container.appendChild(card);
 
-                // رسم الخريطة للطلب بشكل مستقل تلقائياً
+                // رسم خريطة المعاينة التلقائية
                 try {
-                    const pickup = parseCoords(order.pickup_location);
-                    const dropoff = parseCoords(order.dropoff_location);
-
-                    // إنشاء الخريطة وتوسيطها بين النقطتين
                     const cardMap = L.map(mapId, {zoomControl: false}).setView([ (pickup[0]+dropoff[0])/2, (pickup[1]+dropoff[1])/2 ], 13);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(cardMap);
-
-                    // إضافة ماركر الاستلام (الأزرق الافتراضي) وماركر التسليم (الأحمر المخصص)
-                    L.marker(pickup).addTo(cardMap).bindPopup("📍 مكان الاستلام");
-                    L.marker(dropoff).addTo(cardMap).bindPopup("🏁 مكان التسليم");
-
-                    // رسم خط مباشر (Polyline) يربط منين لي وين بلون أحمر احترافي
+                    L.marker(pickup).addTo(cardMap);
+                    L.marker(dropoff).addTo(cardMap);
                     L.polyline([pickup, dropoff], {color: '#dc2626', weight: 4, dashArray: '5, 10'}).addTo(cardMap);
-                    
-                    // احتواء النقطتين داخل مساحة الرؤية تلقائياً
                     cardMap.fitBounds([pickup, dropoff], { padding: [20, 20] });
-                } catch(e) {
-                    document.getElementById(mapId).innerHTML = "<p style='text-align:center; padding-top:60px; color:#64748b;'>تعذر تحميل مسار الخريطة لهذا الطلب القديم</p>";
-                }
+                } catch(e) {}
             });
         }
 
         async function acceptOrder(orderId) {
             const btn = document.getElementById(`btn-${orderId}`);
             btn.className = "accept-btn loading";
-            btn.innerText = "جاري الحجز...";
+            btn.innerText = "جاري الحجز وتثبيت اسمك...";
             btn.disabled = true;
+
+            // جلب معلومات المندوب المسجل محلياً لإرسالها للسيرفر
+            const cName = localStorage.getItem('captain_name');
+            const cPhone = localStorage.getItem('captain_phone');
+            const cBike = localStorage.getItem('captain_bike');
 
             const { error } = await supabaseClient
                 .from('deliveries')
-                .update({ status: 'تم القبول من المندوب' })
+                .update({ 
+                    status: 'تم القبول من المندوب',
+                    captain_name: cName,
+                    captain_phone: cPhone,
+                    captain_bike: cBike
+                })
                 .eq('id', orderId);
 
             if (error) {
@@ -134,7 +232,7 @@
                 btn.disabled = false;
             } else {
                 btn.className = "accept-btn done";
-                btn.innerText = "تم قبول الطلب بنجاح! ✅";
+                btn.innerText = "تم حجز الطلب باسمك بنجاح! ✅";
                 setTimeout(() => {
                     const card = document.getElementById(`card-${orderId}`);
                     if(card) card.style.display = 'none';
@@ -142,10 +240,6 @@
                 }, 1500);
             }
         }
-
-        fetchOrders();
-        // جعل التحديث كل 15 ثانية لتفادي إعادة تحميل الخرائط بشكل يزعج العين أثناء تصفح المندوب
-        setInterval(fetchOrders, 15000);
     </script>
 </body>
 </html>
