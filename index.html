@@ -58,7 +58,7 @@
                 <button id="logoutBtn" onclick="handleLogout()">تسجيل الخروج</button>
             </div>
             <div id="ordersList">
-                <p class="no-orders">جاري مراقبة الشوارع واستقبال الطلبات فورا...</p>
+                <p class="no-orders">جاري مراقبة الشوارع واستقبل الطلبات فورا...</p>
             </div>
         </div>
     </div>
@@ -90,7 +90,7 @@
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
             fetchOrders();
-            supabaseClient.channel('schema-db-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'deliveries' }, () => { fetchOrders(); }).subscribe();
+            setInterval(fetchOrders, 7000); // تحديث دوري آمن ومضمون لشاشة الكابتن كل 7 ثوانٍ
         }
 
         function handleLogout() { localStorage.clear(); location.reload(); }
@@ -100,21 +100,21 @@
             return [parseFloat(parts[0]), parseFloat(parts[1])];
         }
         function makeNativeMapsLink(coordsArray) {
-            return `https://www.google.com/maps?q=${coordsArray[0]},${coordsArray[1]}`;
+            return 'https://www.google.com/maps?q=' + coordsArray[0] + ',' + coordsArray[1];
         }
 
         async function fetchOrders() {
-            const { data: orders, error } = await supabaseClient.from('deliveries').select('*').eq('status', 'قيد الانتظار').order('id', { ascending: false });
+            const response = await supabaseClient.from('deliveries').select('*').eq('status', 'قيد الانتظار').order('id', { ascending: false });
             const container = document.getElementById('ordersList');
-            if (error) { container.innerHTML = '<p class="no-orders" style="color:red;">مشكلة بالاتصال</p>'; return; }
-            if (!orders || orders.length === 0) { container.innerHTML = '<p class="no-orders">لا توجد طلبات جديدة حالياً.. استرح قليلاً ☕</p>'; return; }
+            if (response.error) { container.innerHTML = '<p class="no-orders" style="color:red;">مشكلة بالاتصال</p>'; return; }
+            if (!response.data || response.data.length === 0) { container.innerHTML = '<p class="no-orders">لا توجد طلبات جديدة حالياً.. استرح قليلاً ☕</p>'; return; }
             container.innerHTML = '';
             
-            orders.forEach(order => {
+            response.data.forEach(order => {
                 const card = document.createElement('div');
                 card.className = 'order-card';
-                card.id = `card-${order.id}`;
-                const mapId = `map-${order.id}`;
+                card.id = 'card-' + order.id;
+                const mapId = 'map-' + order.id;
                 const pickup = parseCoords(order.pickup_location);
                 const dropoff = parseCoords(order.dropoff_location);
 
@@ -149,25 +149,30 @@
         }
 
         async function acceptOrder(orderId) {
-            const btn = document.getElementById(`btn-${orderId}`);
+            const btn = document.getElementById('btn-' + orderId);
             btn.className = "accept-btn loading";
             btn.innerText = "جاري الحجز...";
             btn.disabled = true;
 
-            const { error } = await supabaseClient.from('deliveries').update({ 
+            const updateResponse = await supabaseClient.from('deliveries').update({ 
                 status: 'تم القبول من المندوب',
                 captain_name: localStorage.getItem('captain_name'),
                 captain_phone: localStorage.getItem('captain_phone'),
                 captain_bike: localStorage.getItem('captain_bike')
             }).eq('id', orderId);
 
-            if (error) {
+            if (updateResponse.error) {
                 btn.className = "accept-btn";
                 btn.innerText = "⚡ فشل، حاول مجدداً";
                 btn.disabled = false;
             } else {
                 btn.className = "accept-btn done";
                 btn.innerText = "تم قبول الطلب بنجاح! ✅";
+                setTimeout(() => {
+                    const card = document.getElementById('card-' + orderId);
+                    if(card) card.style.display = 'none';
+                    fetchOrders();
+                }, 1000);
             }
         }
     </script>
