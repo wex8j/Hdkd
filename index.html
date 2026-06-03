@@ -115,7 +115,7 @@ const sc=supabase.createClient(supabaseUrl,supabaseKey);
 
 let capName,capPhone,capBike;
 let isBusy=false;
-let maps={},chatChannels={},lastMsgIds={};
+let maps={},chatChannels={},shownMsgIds={};
 
 window.onload=function(){
     if(localStorage.getItem('cap_logged')==='true'){
@@ -219,7 +219,7 @@ async function loadOrders(){
                 <div class="chat-hdr"><span class="live-dot"></span>محادثة مع الزبون 💬</div>
                 <div class="chat-msgs" id="msgs-${order.id}"><span style="color:#475569;font-size:13px;text-align:center;margin:auto;display:block;">لا توجد رسائل بعد...</span></div>
                 <div class="chat-footer">
-                    <button class="send-btn" onclick="sendCapMsg(${order.id})">➤</button>
+                    <button type="button" class="send-btn" onclick="sendCapMsg(${order.id})">➤</button>
                     <input type="text" id="cinput-${order.id}" placeholder="اكتب رسالة للزبون..." onkeydown="if(event.key==='Enter')sendCapMsg(${order.id})">
                 </div>
             </div>`:''}
@@ -283,19 +283,19 @@ async function markDelivered(orderId,btn){
 
 // ===== المحادثة =====
 function appendCapMsg(orderId,msg){
+    if(!shownMsgIds[orderId]) shownMsgIds[orderId]=new Set();
+    if(shownMsgIds[orderId].has(msg.id)) return;
+    shownMsgIds[orderId].add(msg.id);
     const box=document.getElementById('msgs-'+orderId);
     if(!box) return;
-    // إزالة رسالة "لا توجد رسائل"
     const empty=box.querySelector('span');
-    if(empty&&empty.style.display==='block') empty.remove();
-
+    if(empty) empty.remove();
     const isMe=msg.sender_role==='captain';
     const div=document.createElement('div');
     div.className='msg '+(isMe?'me':'them');
     div.innerHTML=`${msg.message}<div class="t">${ftime(msg.created_at)}</div>`;
     box.appendChild(div);
     box.scrollTop=box.scrollHeight;
-    if(!lastMsgIds[orderId]||msg.id>lastMsgIds[orderId]) lastMsgIds[orderId]=msg.id;
 }
 
 async function initCaptainChat(orderId){
@@ -304,7 +304,7 @@ async function initCaptainChat(orderId){
     if(data) data.forEach(m=>appendCapMsg(orderId,m));
     chatChannels[orderId]=sc.channel('cap-chat-'+orderId)
         .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:`order_id=eq.${orderId}`},(p)=>{
-            if(!lastMsgIds[orderId]||p.new.id!==lastMsgIds[orderId]) appendCapMsg(orderId,p.new);
+            appendCapMsg(orderId,p.new);
         }).subscribe();
 }
 
