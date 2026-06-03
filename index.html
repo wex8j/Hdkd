@@ -2,64 +2,227 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة الكابتن - يلا نروح</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة المندوب - يلا نروح</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { font-family: 'Cairo', sans-serif; background: #f8fafc; padding: 20px; }
-        .container { max-width: 500px; margin: auto; }
-        .order-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        #map { height: 250px; border-radius: 15px; margin-bottom: 15px; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
-        #chatBox { background: #fff; padding: 15px; border-radius: 15px; margin-top: 10px; border: 1px solid #e2e8f0; display: none; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; background: #0f172a; color: #f1f5f9; margin: 0; padding: 15px; direction: rtl; min-height: 100vh; }
+        .container { max-width: 480px; margin: 0 auto; }
+        h2 { text-align: center; color: #818cf8; font-weight: 700; font-size: 22px; margin-bottom: 20px; }
+        .card { background: #1e293b; border-radius: 16px; padding: 18px; margin-bottom: 15px; border: 1px solid #334155; }
+        .card-header { font-weight: 700; font-size: 16px; color: #a5b4fc; margin-bottom: 12px; }
+        .field { margin-bottom: 10px; font-size: 14px; }
+        .field span { color: #94a3b8; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .badge.waiting { background: #fef3c7; color: #92400e; }
+        .badge.accepted { background: #d1fae5; color: #065f46; }
+        label { font-weight: 600; color: #94a3b8; display: block; margin-bottom: 6px; font-size: 13px; }
+        input { width: 100%; padding: 11px; margin-bottom: 12px; border: 1.5px solid #334155; border-radius: 10px; background: #0f172a; color: #f1f5f9; font-family: 'Cairo'; font-size: 14px; outline: none; }
+        input:focus { border-color: #6366f1; }
+        button.main-btn { width: 100%; padding: 13px; background: #6366f1; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Cairo'; margin-bottom: 8px; transition: opacity 0.2s; }
+        button.main-btn:hover { opacity: 0.9; }
+        button.main-btn.green { background: #10b981; }
+        #noOrders { text-align: center; color: #475569; padding: 30px; font-size: 14px; }
+        #loginBox { display: block; }
+        #dashBox { display: none; }
+
+        /* ========== نظام المحادثة ========== */
+        .chat-wrap { margin-top: 15px; border: 1px solid #334155; border-radius: 14px; overflow: hidden; display: none; }
+        .chat-header { background: #312e81; color: #c7d2fe; padding: 10px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .chat-dot { width: 9px; height: 9px; background: #4ade80; border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+        .chat-msgs { height: 200px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #0f172a; }
+        .msg { max-width: 80%; padding: 9px 13px; border-radius: 16px; font-size: 13px; line-height: 1.5; word-break: break-word; }
+        .msg.me { background: #6366f1; color: white; align-self: flex-start; border-bottom-right-radius: 4px; }
+        .msg.them { background: #1e293b; color: #e2e8f0; align-self: flex-end; border: 1px solid #334155; border-bottom-left-radius: 4px; }
+        .msg .time { font-size: 10px; opacity: 0.6; margin-top: 3px; }
+        .chat-input-row { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #334155; background: #1e293b; }
+        .chat-input-row input { margin: 0; flex: 1; padding: 9px 12px; font-size: 13px; border-radius: 20px; }
+        .chat-input-row button { width: auto; padding: 9px 14px; border-radius: 20px; background: #6366f1; color: white; border: none; font-size: 17px; cursor: pointer; flex-shrink: 0; }
+        #noMsgsCap { color: #475569; font-size: 13px; text-align: center; margin: auto; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>لوحة التحكم 🛵</h2>
-        <div id="ordersList">جاري تحميل الطلبات...</div>
+<div class="container">
+
+    <!-- تسجيل المندوب -->
+    <div id="loginBox">
+        <h2>👋 أهلاً بالمندوب</h2>
+        <div class="card">
+            <label>اسمك</label><input type="text" id="capName" placeholder="اسم المندوب">
+            <label>رقم هاتفك</label><input type="tel" id="capPhone" placeholder="07XXXXXXXXX">
+            <label>نوع دراجتك</label><input type="text" id="capBike" placeholder="مثال: هوندا 125">
+            <button class="main-btn" onclick="saveCaptainLogin()">دخول لوحة المناديب</button>
+        </div>
     </div>
 
-    <script>
-        const supabase = supabase.createClient('URL', 'KEY');
+    <!-- لوحة المندوب -->
+    <div id="dashBox">
+        <h2>📋 الطلبات المتاحة</h2>
+        <div id="ordersList"><div id="noOrders">⏳ جاري تحميل الطلبات...</div></div>
+    </div>
 
-        async function fetchOrders() {
-            // 1. فحص هل الكابتن مشغول بطلب؟
-            const { data: active } = await supabase.from('deliveries')
-                .select('*').eq('captain_phone', localStorage.getItem('captain_phone'))
-                .eq('status', 'تم القبول من المندوب').single();
+</div>
 
-            const list = document.getElementById('ordersList');
+<script>
+    const supabaseUrl = 'https://swblfuyivvsrjulztyff.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3YmxmdXlpdnZzcmp1bHp0eWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ4NTMsImV4cCI6MjA5NjA3MDg1M30.B_2lxLiEdIWSUGPlLblmi6ob8zBBAIwiOjl1Yb6RhLs';
+    const sc = supabase.createClient(supabaseUrl, supabaseKey);
 
-            if (active) {
-                // الكابتن مشغول: عرض الطلب + الخريطة + المحادثة
-                list.innerHTML = `
-                    <div class="order-card">
-                        <h3>طلب نشط: ${active.client_name}</h3>
-                        <div id="map"></div>
-                        <div id="chatBox" style="display:block;">
-                            <div id="messages" style="height:150px; overflow-y:scroll; background:#f1f5f9; padding:10px; border-radius:10px;"></div>
-                            <input type="text" id="msgInput" style="width:70%; padding:8px;">
-                            <button onclick="sendMessage(${active.id})">إرسال</button>
-                        </div>
-                        <button class="btn" style="background:#dc2626" onclick="finishOrder(${active.id})">✅ تم التسليم</button>
-                    </div>`;
-                // هنا تشغيل كود الخريطة (Leaflet)
-                // ...
-            } else {
-                // الكابتن متاح: عرض الطلبات المتاحة فقط
-                const { data } = await supabase.from('deliveries').select('*').eq('status', 'قيد الانتظار');
-                list.innerHTML = data.map(o => `
-                    <div class="order-card">
-                        <p>الزبون: ${o.client_name}</p>
-                        <button class="btn" style="background:#4f46e5" onclick="acceptOrder(${o.id})">قبول الطلب</button>
-                    </div>`).join('');
-            }
+    let capName, capPhone, capBike;
+    let activeChatOrderId = null;
+    let lastMsgIds = {};
+    let chatChannels = {};
+
+    window.onload = function() {
+        if (localStorage.getItem('cap_logged') === 'true') {
+            capName = localStorage.getItem('cap_name');
+            capPhone = localStorage.getItem('cap_phone');
+            capBike = localStorage.getItem('cap_bike');
+            showDashboard();
         }
-        
-        // بقية الدوال (acceptOrder, finishOrder, sendMessage) تبقى كما هي.
-        fetchOrders();
-    </script>
+    }
+
+    function saveCaptainLogin() {
+        capName = document.getElementById('capName').value.trim();
+        capPhone = document.getElementById('capPhone').value.trim();
+        capBike = document.getElementById('capBike').value.trim();
+        if (!capName || !capPhone) { alert("الرجاء إكمال البيانات!"); return; }
+        localStorage.setItem('cap_name', capName);
+        localStorage.setItem('cap_phone', capPhone);
+        localStorage.setItem('cap_bike', capBike);
+        localStorage.setItem('cap_logged', 'true');
+        showDashboard();
+    }
+
+    function showDashboard() {
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('dashBox').style.display = 'block';
+        loadOrders();
+        // استماع للطلبات الجديدة
+        sc.channel('new-orders').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deliveries' }, loadOrders).subscribe();
+        sc.channel('upd-orders').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'deliveries' }, loadOrders).subscribe();
+    }
+
+    async function loadOrders() {
+        const { data } = await sc.from('deliveries').select('*').order('created_at', { ascending: false }).limit(30);
+        const list = document.getElementById('ordersList');
+        if (!data || data.length === 0) {
+            list.innerHTML = '<div id="noOrders">📭 لا توجد طلبات حالياً</div>';
+            return;
+        }
+        list.innerHTML = '';
+        data.forEach(order => {
+            const accepted = order.status === 'تم القبول من المندوب';
+            const myOrder = accepted && order.captain_phone === capPhone;
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = 'order-card-' + order.id;
+            card.innerHTML = `
+                <div class="card-header">
+                    طلب #${order.id}
+                    <span class="badge ${accepted ? 'accepted' : 'waiting'}">${order.status}</span>
+                </div>
+                <div class="field">📦 <span>الغرض:</span> ${order.item_details}</div>
+                <div class="field">📍 <span>الاستلام:</span> ${order.pickup_location}</div>
+                <div class="field">🏁 <span>التسليم:</span> ${order.dropoff_location}</div>
+                <div class="field">📏 <span>المسافة:</span> ${order.distance} كم</div>
+                <div class="field">💰 <span>الأجرة:</span> ${Number(order.price).toLocaleString()} د.ع</div>
+                <div class="field">👤 <span>الزبون:</span> ${order.client_name} | ${order.client_phone}</div>
+                ${!accepted ? `<button class="main-btn green" onclick="acceptOrder(${order.id}, this)">✅ قبول الطلب</button>` : ''}
+                ${myOrder ? `
+                    <div class="chat-wrap" id="chat-${order.id}">
+                        <div class="chat-header"><span class="chat-dot"></span>محادثة مع الزبون 💬</div>
+                        <div class="chat-msgs" id="msgs-${order.id}">
+                            <span id="noMsgsCap-${order.id}" style="color:#475569;font-size:13px;text-align:center;margin:auto;">لا توجد رسائل بعد...</span>
+                        </div>
+                        <div class="chat-input-row">
+                            <button onclick="sendCapMsg(${order.id})">➤</button>
+                            <input type="text" id="capInput-${order.id}" placeholder="اكتب رسالة للزبون..." onkeydown="if(event.key==='Enter') sendCapMsg(${order.id})">
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            list.appendChild(card);
+            if (myOrder) {
+                document.getElementById('chat-' + order.id).style.display = 'block';
+                initCaptainChat(order.id);
+            }
+        });
+    }
+
+    async function acceptOrder(orderId, btn) {
+        btn.disabled = true;
+        btn.innerText = '⏳ جاري القبول...';
+        const { error } = await sc.from('deliveries').update({
+            status: 'تم القبول من المندوب',
+            captain_name: capName,
+            captain_phone: capPhone,
+            captain_bike: capBike
+        }).eq('id', orderId);
+        if (error) { alert('خطأ!'); btn.disabled = false; btn.innerText = '✅ قبول الطلب'; }
+        else { loadOrders(); }
+    }
+
+    // ===== نظام المحادثة =====
+
+    function formatTime(ts) {
+        const d = new Date(ts);
+        return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function appendCapMessage(orderId, msg) {
+        const box = document.getElementById('msgs-' + orderId);
+        if (!box) return;
+        const noEl = document.getElementById('noMsgsCap-' + orderId);
+        if (noEl) noEl.remove();
+
+        const isMe = msg.sender_role === 'captain';
+        const div = document.createElement('div');
+        div.className = `msg ${isMe ? 'me' : 'them'}`;
+        div.innerHTML = `${msg.message}<div class="time">${formatTime(msg.created_at)}</div>`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+
+        if (!lastMsgIds[orderId] || msg.id > lastMsgIds[orderId]) lastMsgIds[orderId] = msg.id;
+    }
+
+    async function initCaptainChat(orderId) {
+        if (chatChannels[orderId]) return; // لا تعيد الاشتراك
+
+        const { data } = await sc.from('chat_messages').select('*').eq('order_id', orderId).order('created_at', { ascending: true });
+        if (data) data.forEach(m => appendCapMessage(orderId, m));
+
+        chatChannels[orderId] = sc.channel('chat-cap-' + orderId)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chat_messages',
+                filter: `order_id=eq.${orderId}`
+            }, (payload) => {
+                if (!lastMsgIds[orderId] || payload.new.id !== lastMsgIds[orderId]) {
+                    appendCapMessage(orderId, payload.new);
+                }
+            })
+            .subscribe();
+    }
+
+    async function sendCapMsg(orderId) {
+        const input = document.getElementById('capInput-' + orderId);
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+
+        const { error } = await sc.from('chat_messages').insert([{
+            order_id: orderId,
+            sender_role: 'captain',
+            sender_name: capName,
+            message: text
+        }]);
+        if (error) { console.error('خطأ:', error); input.value = text; }
+    }
+</script>
 </body>
 </html>
