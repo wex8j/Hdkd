@@ -6,25 +6,31 @@
     <title>لوحة الكابتن - يلا نروح</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; direction: rtl; }
         .container { max-width: 500px; margin: 0 auto; }
         .header { text-align: center; padding: 15px 0; background: #059669; color: white; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); }
         .header h2 { margin: 0; font-size: 20px; font-weight: 700; }
-        .order-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 15px; transition: 0.3s; border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
-        .order-card::before { content: ''; position: absolute; top: 0; right: 0; width: 6px; height: 100%; background: #059669; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
+        .order-card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #e2e8f0; position: relative; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
         .price-badge { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 15px; }
         .distance-badge { background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
-        .detail-item { font-size: 14px; color: #475569; margin: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .detail-item strong { color: #1e293b; min-width: 70px; }
-        .location-link { background: #f1f5f9; color: #2563eb; font-weight: 600; padding: 4px 10px; border-radius: 8px; text-decoration: none; font-size: 12px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s; }
-        .location-link:hover { background: #e2e8f0; }
-        .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .detail-item { font-size: 14px; color: #1e293b; margin: 8px 0; }
+        .detail-item strong { color: #475569; }
+        
+        /* تصميم الخريطة المصغرة داخل كارد المندوب */
+        .order-map { height: 160px; border-radius: 12px; margin: 12px 0; border: 1.5px solid #e2e8f0; z-index: 1; }
+        
+        .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; margin-top: 5px; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .accept-btn:hover { background: #047857; }
         .accept-btn.loading { background: #9ca3af; cursor: not-allowed; }
         .accept-btn.done { background: #10b981; cursor: not-allowed; }
         .no-orders { text-align: center; color: #64748b; font-size: 15px; margin-top: 60px; }
+        .nav-hint { text-align: center; font-size: 11px; color: #64748b; margin-top: -5px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -43,10 +49,11 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3YmxmdXlpdnZzcmp1bHp0eWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ4NTMsImV4cCI6MjA5NjA3MDg1M30.B_2lxLiEdIWSUGPlLblmi6ob8zBBAIwiOjl1Yb6RhLs';
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // دالة لتنظيف الإحداثيات وتحويلها لرابط خرائط جوجل دوت كوم
-        function makeGoogleMapsUrl(locationStr) {
-            const cleanCoords = locationStr.replace('إحداثيات:', '').trim();
-            return `https://www.google.com/maps/search/?api=1&query=${cleanCoords}`;
+        // دالة تحويل إحداثيات النص إلى مصفوفة أرقام [lat, lng]
+        function parseCoords(locationStr) {
+            const clean = locationStr.replace('إحداثيات:', '').trim();
+            const parts = clean.split(',');
+            return [parseFloat(parts[0]), parseFloat(parts[1])];
         }
 
         async function fetchOrders() {
@@ -61,34 +68,52 @@
             if (!orders || orders.length === 0) { container.innerHTML = '<p class="no-orders">لا توجد طلبات جديدة حالياً.. استرح قليلاً ☕</p>'; return; }
 
             container.innerHTML = '';
+            
             orders.forEach(order => {
-                const pickupUrl = makeGoogleMapsUrl(order.pickup_location);
-                const dropoffUrl = makeGoogleMapsUrl(order.dropoff_location);
-
                 const card = document.createElement('div');
                 card.className = 'order-card';
                 card.id = `card-${order.id}`;
+                
+                // تجهيز معرف فريد لكل خريطة داخل الكروت
+                const mapId = `map-${order.id}`;
+
                 card.innerHTML = `
                     <div class="card-header">
                         <span class="distance-badge">🛣️ ${order.distance || '0'} كم</span>
                         <span class="price-badge">${(order.price || 0).toLocaleString()} د.ع</span>
                     </div>
-                    <div class="detail-item">
-                        <div><strong>📦 الغرض:</strong> <span>${order.item_details}</span></div>
-                    </div>
-                    <div class="detail-item">
-                        <div><strong>📍 من:</strong> <span style="font-size:12px; color:#64748b;">مكان الاستلام</span></div>
-                        <a href="${pickupUrl}" target="_blank" class="location-link">🗺️ افتح الخريطة</a>
-                    </div>
-                    <div class="detail-item">
-                        <div><strong>🏁 إلى:</strong> <span style="font-size:12px; color:#64748b;">مكان التسليم</span></div>
-                        <a href="${dropoffUrl}" target="_blank" class="location-link">🗺️ افتح الخريطة</a>
-                    </div>
+                    <div class="detail-item"><strong>📦 الغرض:</strong> <span>${order.item_details}</span></div>
+                    
+                    <div id="${mapId}" class="order-map"></div>
+                    <div class="nav-hint">💡 تكدر تحرك الخريطة وتكبر وتصغر لتشوف المسار كامل</div>
+
                     <button class="accept-btn" id="btn-${order.id}" onclick="acceptOrder(${order.id})">
                         ⚡ قبول واستلام الطلب
                     </button>
                 `;
                 container.appendChild(card);
+
+                // رسم الخريطة للطلب بشكل مستقل تلقائياً
+                try {
+                    const pickup = parseCoords(order.pickup_location);
+                    const dropoff = parseCoords(order.dropoff_location);
+
+                    // إنشاء الخريطة وتوسيطها بين النقطتين
+                    const cardMap = L.map(mapId, {zoomControl: false}).setView([ (pickup[0]+dropoff[0])/2, (pickup[1]+dropoff[1])/2 ], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(cardMap);
+
+                    // إضافة ماركر الاستلام (الأزرق الافتراضي) وماركر التسليم (الأحمر المخصص)
+                    L.marker(pickup).addTo(cardMap).bindPopup("📍 مكان الاستلام");
+                    L.marker(dropoff).addTo(cardMap).bindPopup("🏁 مكان التسليم");
+
+                    // رسم خط مباشر (Polyline) يربط منين لي وين بلون أحمر احترافي
+                    L.polyline([pickup, dropoff], {color: '#dc2626', weight: 4, dashArray: '5, 10'}).addTo(cardMap);
+                    
+                    // احتواء النقطتين داخل مساحة الرؤية تلقائياً
+                    cardMap.fitBounds([pickup, dropoff], { padding: [20, 20] });
+                } catch(e) {
+                    document.getElementById(mapId).innerHTML = "<p style='text-align:center; padding-top:60px; color:#64748b;'>تعذر تحميل مسار الخريطة لهذا الطلب القديم</p>";
+                }
             });
         }
 
@@ -119,7 +144,8 @@
         }
 
         fetchOrders();
-        setInterval(fetchOrders, 7000);
+        // جعل التحديث كل 15 ثانية لتفادي إعادة تحميل الخرائط بشكل يزعج العين أثناء تصفح المندوب
+        setInterval(fetchOrders, 15000);
     </script>
 </body>
 </html>
