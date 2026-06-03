@@ -3,59 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة المندوب - يلا نروح</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <title>لوحة الكابتن - يلا نروح</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        h2 { text-align: center; color: #059669; margin-bottom: 25px; }
-        .order-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; border-right: 5px solid #059669; }
-        .order-details p { margin: 5px 0; font-size: 15px; color: #374151; }
-        .order-details strong { color: #111827; }
-        .accept-btn { width: 100%; padding: 10px; background-color: #059669; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; font-family: 'Cairo', sans-serif; }
-        .accept-btn:hover { background-color: #047857; }
-        .no-orders { text-align: center; color: #6b7280; font-size: 16px; margin-top: 50px; }
+        body { font-family: 'Cairo', sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; direction: rtl; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .header { text-align: center; padding: 15px 0; background: #059669; color: white; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); }
+        .header h2 { margin: 0; font-size: 20px; font-weight: 700; }
+        .order-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 15px; transition: 0.3s; border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        .order-card::before { content: ''; position: absolute; top: 0; right: 0; width: 6px; height: 100%; background: #059669; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
+        .price-badge { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 15px; }
+        .distance-badge { background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+        .detail-item { font-size: 14px; color: #475569; margin: 8px 0; display: flex; align-items: center; gap: 8px; }
+        .detail-item strong { color: #1e293b; min-width: 70px; }
+        .accept-btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .accept-btn:hover { background: #047857; }
+        .accept-btn.loading { background: #9ca3af; cursor: not-allowed; }
+        .accept-btn.done { background: #10b981; cursor: not-allowed; }
+        .no-orders { text-align: center; color: #64748b; font-size: 15px; margin-top: 60px; }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h2>طلبات التوصيل المتاحة 🚗</h2>
-        <div id="ordersList"><p class="no-orders">جاري تحميل الطلبات الحالية...</p></div>
+        <div class="header">
+            <h2>الطلبات النشطة بالرمادي 🚗</h2>
+        </div>
+        <div id="ordersList">
+            <p class="no-orders">جاري مراقبة الشوارع والطلبات...</p>
+        </div>
     </div>
+
     <script>
         const supabaseUrl = 'https://swblfuyivvsrjulztyff.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3YmxmdXlpdnZzcmp1bHp0eWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ4NTMsImV4cCI6MjA5NjA3MDg1M30.B_2lxLiEdIWSUGPlLblmi6ob8zBBAIwiOjl1Yb6RhLs';
-        const { createClient } = supabase;
-        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         async function fetchOrders() {
-            const { data: orders, error } = await supabaseClient.from('deliveries').select('*').eq('status', 'قيد الانتظار').order('id', { ascending: false });
+            const { data: orders, error } = await supabaseClient
+                .from('deliveries')
+                .select('*')
+                .eq('status', 'قيد الانتظار')
+                .order('id', { ascending: false });
+
             const container = document.getElementById('ordersList');
+            if (error) { container.innerHTML = '<p class="no-orders" style="color:red;">مشكلة بالاتصال بالسيرفر</p>'; return; }
+            if (!orders || orders.length === 0) { container.innerHTML = '<p class="no-orders">لا توجد طلبات جديدة حالياً.. استرح قليلاً ☕</p>'; return; }
+
             container.innerHTML = '';
-            if (error) { container.innerHTML = '<p class="no-orders" style="color:red;">حدث خطأ أثناء جلب الطلبات</p>'; return; }
-            if (orders.length === 0) { container.innerHTML = '<p class="no-orders">لا توجد طلبات جديدة حالياً ☕</p>'; return; }
             orders.forEach(order => {
                 const card = document.createElement('div');
                 card.className = 'order-card';
+                card.id = `card-${order.id}`;
                 card.innerHTML = `
-                    <div class="order-details">
-                        <p><strong>📦 الغرض:</strong> ${order.item_details}</p>
-                        <p><strong>📍 من (الاستلام):</strong> ${order.pickup_location}</p>
-                        <p><strong>🏁 إلى (التسليم):</strong> ${order.dropoff_location}</p>
+                    <div class="card-header">
+                        <span class="distance-badge">🛣️ ${order.distance || '0'} كم</span>
+                        <span class="price-badge">${(order.price || 0).toLocaleString()} د.ع</span>
                     </div>
-                    <button class="accept-btn" onclick="acceptOrder(${order.id})">استلام الطلب وتبليغ الزبون</button>
+                    <div class="detail-item"><strong>📦 الغرض:</strong> <span>${order.item_details}</span></div>
+                    <div class="detail-item"><strong>📍 من:</strong> <span>${order.pickup_location}</span></div>
+                    <div class="detail-item"><strong>🏁 إلى:</strong> <span>${order.dropoff_location}</span></div>
+                    <button class="accept-btn" id="btn-${order.id}" onclick="acceptOrder(${order.id})">
+                        ⚡ قبول واستلام الطلب
+                    </button>
                 `;
                 container.appendChild(card);
             });
         }
 
         async function acceptOrder(orderId) {
-            const { error } = await supabaseClient.from('deliveries').update({ status: 'تم القبول من المندوب' }).eq('id', orderId);
-            if (error) { alert('حدث خطأ أثناء قبول الطلب'); } else { alert('ممتاز! قمت باستلام الطلب بنجاح، توجه للزبون الآن.'); fetchOrders(); }
+            const btn = document.getElementById(`btn-${orderId}`);
+            btn.className = "accept-btn loading";
+            btn.innerText = "جاري الحجز...";
+            btn.disabled = true;
+
+            const { error } = await supabaseClient
+                .from('deliveries')
+                .update({ status: 'تم القبول من المندوب' })
+                .eq('id', orderId);
+
+            if (error) {
+                btn.className = "accept-btn";
+                btn.innerText = "⚡ فشل الحجز، حاول مجدداً";
+                btn.disabled = false;
+            } else {
+                btn.className = "accept-btn done";
+                btn.innerText = "تم قبول الطلب بنجاح! ✅";
+                // تختفي البطاقة بهدوء بعد ثانية ونصف
+                setTimeout(() => {
+                    const card = document.getElementById(`card-${orderId}`);
+                    if(card) card.style.display = 'none';
+                    fetchOrders();
+                }, 1500);
+            }
         }
+
         fetchOrders();
-        setInterval(fetchOrders, 10000);
+        setInterval(fetchOrders, 7000); // تحديث دوري ذكي كل 7 ثوانٍ
     </script>
 </body>
 </html>
